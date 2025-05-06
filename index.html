@@ -27,9 +27,9 @@
         <li>Potting a red gives 1 point, then a color of choice.</li>
         <li>Color points: Yellow (2), Green (3), Brown (4), Blue (5), Pink (6), Black (7).</li>
         <li>After all reds, colors must be potted in order: Yellow to Black.</li>
-        <li>Foul if cue ball misses target ball: 4-7 points to opponent.</li>
-        <li>Touching ball or double hit = foul.</li>
-        <li>Failing to hit any ball = foul.</li>
+        <li>Foul if cue ball misses target ball: 4–7 points to opponent depending on ball involved.</li>
+        <li>Touching ball, double hit, or jump shot = foul.</li>
+        <li>Failing to hit any ball or playing out of turn = foul.</li>
       </ul>
     </div>
   </div>
@@ -43,6 +43,16 @@
       blue: 5,
       pink: 6,
       black: 7
+    };
+
+    const colorMap = {
+      red: 'red',
+      yellow: 'yellow',
+      green: 'green',
+      brown: 'amber',
+      blue: 'blue',
+      pink: 'pink',
+      black: 'gray'
     };
 
     let players = [];
@@ -68,7 +78,10 @@
         div.innerHTML = `
           <h3 class="font-semibold text-lg mb-2">${player.name}: <span id="score-${player.id}">${player.score}</span></h3>
           <div class="grid grid-cols-4 gap-2 text-center text-sm">
-            ${Object.entries(pointValues).map(([color, value]) => `<button onclick="addPoints(${player.id}, ${value}, '${color}')" class="bg-${color === 'red' ? 'red' : color}-500 text-white rounded px-2 py-1">${color.charAt(0).toUpperCase() + color.slice(1)} (+${value})</button>`).join('')}
+            ${Object.entries(pointValues).map(([color, value]) => {
+              const twColor = colorMap[color] || 'gray';
+              return `<button onclick="addPoints(${player.id}, ${value}, '${color}')" class="bg-${twColor}-500 text-white rounded px-2 py-1">${color.charAt(0).toUpperCase() + color.slice(1)} (+${value})</button>`;
+            }).join('')}
             <button onclick="addFoul(${player.id})" class="col-span-2 bg-black text-white rounded px-2 py-1">Foul (+4)</button>
           </div>
         `;
