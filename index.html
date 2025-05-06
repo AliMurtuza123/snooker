@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snooker Points Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+  <div class="max-w-md mx-auto">
+    <h1 class="text-2xl font-bold mb-4 text-center">Snooker Points Tracker</h1>
+
+    <div class="mb-4">
+      <input id="playerName" type="text" placeholder="Add player name" class="border rounded px-3 py-2 w-full" />
+      <button onclick="addPlayer()" class="mt-2 w-full bg-blue-500 text-white rounded px-3 py-2">Add Player</button>
+    </div>
+
+    <div id="playersContainer" class="space-y-4"></div>
+
+    <div class="my-6 p-4 bg-white rounded shadow">
+      <h2 class="text-lg font-semibold mb-2">Remaining Points on Table: <span id="remainingPoints">147</span></h2>
+    </div>
+
+    <div class="my-6 p-4 bg-white rounded shadow">
+      <h2 class="text-lg font-semibold mb-2">Common Snooker Rules & Fouls</h2>
+      <ul class="list-disc list-inside text-sm">
+        <li>Potting a red gives 1 point, then a color of choice.</li>
+        <li>Color points: Yellow (2), Green (3), Brown (4), Blue (5), Pink (6), Black (7).</li>
+        <li>After all reds, colors must be potted in order: Yellow to Black.</li>
+        <li>Foul if cue ball misses target ball: 4-7 points to opponent.</li>
+        <li>Touching ball or double hit = foul.</li>
+        <li>Failing to hit any ball = foul.</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    const pointValues = {
+      red: 1,
+      yellow: 2,
+      green: 3,
+      brown: 4,
+      blue: 5,
+      pink: 6,
+      black: 7
+    };
+
+    let players = [];
+    let remainingPoints = 147;
+
+    function addPlayer() {
+      const name = document.getElementById("playerName").value.trim();
+      if (!name) return;
+      const id = Date.now();
+      players.push({ id, name, score: 0 });
+      renderPlayers();
+      document.getElementById("playerName").value = "";
+    }
+
+    function renderPlayers() {
+      const container = document.getElementById("playersContainer");
+      container.innerHTML = "";
+
+      players.forEach(player => {
+        const div = document.createElement("div");
+        div.className = "bg-white p-4 rounded shadow";
+
+        div.innerHTML = `
+          <h3 class="font-semibold text-lg mb-2">${player.name}: <span id="score-${player.id}">${player.score}</span></h3>
+          <div class="grid grid-cols-4 gap-2 text-center text-sm">
+            ${Object.entries(pointValues).map(([color, value]) => `<button onclick="addPoints(${player.id}, ${value}, '${color}')" class="bg-${color === 'red' ? 'red' : color}-500 text-white rounded px-2 py-1">${color.charAt(0).toUpperCase() + color.slice(1)} (+${value})</button>`).join('')}
+            <button onclick="addFoul(${player.id})" class="col-span-2 bg-black text-white rounded px-2 py-1">Foul (+4)</button>
+          </div>
+        `;
+
+        container.appendChild(div);
+      });
+    }
+
+    function addPoints(id, points, color) {
+      const player = players.find(p => p.id === id);
+      if (!player) return;
+      player.score += points;
+      updateUI(id);
+      remainingPoints = Math.max(remainingPoints - points, 0);
+      document.getElementById("remainingPoints").innerText = remainingPoints;
+    }
+
+    function addFoul(id) {
+      const foulPoints = 4;
+      const opponents = players.filter(p => p.id !== id);
+      if (opponents.length === 0) return;
+      opponents.forEach(p => p.score += foulPoints);
+      opponents.forEach(p => updateUI(p.id));
+    }
+
+    function updateUI(id) {
+      document.getElementById(`score-${id}`).innerText = players.find(p => p.id === id).score;
+    }
+  </script>
+</body>
+</html>
