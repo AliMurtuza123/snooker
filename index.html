@@ -19,6 +19,11 @@
 
     <div id="playersContainer" class="space-y-4"></div>
 
+    <div class="flex gap-2 mt-4">
+      <button onclick="undoLastAction()" class="flex-1 bg-yellow-500 text-white rounded px-3 py-2">Undo</button>
+      <button onclick="resetGame()" class="flex-1 bg-red-500 text-white rounded px-3 py-2">Reset / Next Game</button>
+    </div>
+
     <div class="my-6 p-4 bg-white rounded shadow">
       <h2 class="text-lg font-semibold mb-2">Remaining Points on Table: <span id="remainingPoints">147</span></h2>
     </div>
@@ -59,6 +64,7 @@
 
     let players = [];
     let remainingPoints = 147;
+    let history = [];
 
     function addPlayer() {
       const name = document.getElementById("playerName").value.trim();
@@ -95,6 +101,15 @@
     function addPoints(id, points, color) {
       const player = players.find(p => p.id === id);
       if (!player) return;
+
+      history.push({
+        type: 'addPoints',
+        id,
+        points,
+        color,
+        previousRemaining: remainingPoints
+      });
+
       player.score += points;
       updateUI(id);
       remainingPoints = Math.max(remainingPoints - points, 0);
@@ -105,9 +120,50 @@
       const foulPoints = 4;
       const opponents = players.filter(p => p.id !== id);
       if (opponents.length === 0) return;
-      opponents.forEach(p => p.score += foulPoints);
-      opponents.forEach(p => updateUI(p.id));
+
+      history.push({
+        type: 'foul',
+        offenderId: id,
+        affected: opponents.map(p => ({ id: p.id, prevScore: p.score }))
+      });
+
+      opponents.forEach(p => {
+        p.score += foulPoints;
+        updateUI(p.id);
+      });
     }
+
+    function undoLastAction() {
+      const last = history.pop();
+      if (!last) return;
+
+      if (last.type === 'addPoints') {
+        const player = players.find(p => p.id === last.id);
+        if (!player) return;
+        player.score -= last.points;
+        remainingPoints = last.previousRemaining;
+        updateUI(player.id);
+        document.getElementById("remainingPoints").innerText = remainingPoints;
+      } else if (last.type === 'foul') {
+        last.affected.forEach(({ id, prevScore }) => {
+          const player = players.find(p => p.id === id);
+          if (player) {
+            player.score = prevScore;
+            updateUI(id);
+          }
+        });
+      }
+    }
+
+function resetGame() {
+  players.forEach(player => {
+    player.score = 0;
+    updateUI(player.id);
+  });
+  remainingPoints = 147;
+  history = [];
+  document.getElementById("remainingPoints").innerText = remainingPoints;
+}
 
     function updateUI(id) {
       document.getElementById(`score-${id}`).innerText = players.find(p => p.id === id).score;
