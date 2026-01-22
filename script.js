@@ -593,3 +593,175 @@ function clearSavedData() {
     alert("All saved data cleared!");
   }
 }
+
+// Export game history to JSON file
+function exportGameHistory() {
+  const data = {
+    gameHistory: gameHistory,
+    currentGameNumber: currentGameNumber,
+    exportDate: new Date().toISOString(),
+    version: "1.0"
+  };
+  
+  const jsonString = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonString], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `snooker-history-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  alert(`Exported ${gameHistory.length} games to file!`);
+}
+
+// Import game history from JSON file
+function importGameHistory() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  
+  input.onchange = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        
+        // Validate the imported data structure
+        if (!data.gameHistory || !Array.isArray(data.gameHistory)) {
+          throw new Error("Invalid file format: missing or invalid gameHistory");
+        }
+        
+        // Show import options
+        showImportOptions(data);
+        
+      } catch (error) {
+        alert(`Error importing file: ${error.message}`);
+      }
+    };
+    
+    reader.readAsText(file);
+  };
+  
+  input.click();
+}
+
+// Show import options dialog
+function showImportOptions(importData) {
+  const overlay = document.createElement("div");
+  overlay.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4";
+  
+  const currentGames = gameHistory.length;
+  const importGames = importData.gameHistory.length;
+  const exportDate = importData.exportDate ? new Date(importData.exportDate).toLocaleString() : "Unknown";
+  
+  overlay.innerHTML = `
+    <div class="bg-white rounded-lg max-w-md w-full">
+      <div class="p-6">
+        <h3 class="text-xl font-semibold mb-4">Import Game History</h3>
+        <div class="mb-4 text-sm text-gray-600">
+          <p><strong>Current games:</strong> ${currentGames}</p>
+          <p><strong>Import games:</strong> ${importGames}</p>
+          <p><strong>Export date:</strong> ${exportDate}</p>
+        </div>
+        <div class="space-y-3">
+          <button onclick="performImport('replace', ${JSON.stringify(importData).replace(/"/g, '&quot;')}); removeImportDialog();" 
+                  class="w-full bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2">
+            Replace Current History
+          </button>
+          <button onclick="performImport('merge', ${JSON.stringify(importData).replace(/"/g, '&quot;')}); removeImportDialog();" 
+                  class="w-full bg-blue-500 hover:bg-blue-600 text-white rounded px-4 py-2">
+            Merge with Current History
+          </button>
+          <button onclick="removeImportDialog()" 
+                  class="w-full bg-gray-500 hover:bg-gray-600 text-white rounded px-4 py-2">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
+}
+
+// Perform the actual import
+function performImport(mode, importData) {
+  try {
+    if (mode === 'replace') {
+      gameHistory = importData.gameHistory;
+      currentGameNumber = importData.currentGameNumber || 1;
+    } else if (mode === 'merge') {
+      // Merge histories and adjust game numbers
+      const maxGameNumber = gameHistory.length > 0 ? 
+        Math.max(...gameHistory.map(g => g.gameNumber)) : 0;
+      
+      const adjustedImportHistory = importData.gameHistory.map(game => ({
+        ...game,
+        gameNumber: game.gameNumber + maxGameNumber
+      }));
+      
+      gameHistory = [...gameHistory, ...adjustedImportHistory];
+      currentGameNumber = Math.max(currentGameNumber, 
+        importData.currentGameNumber + maxGameNumber);
+    }
+    
+    saveToLocalStorage();
+    updateGameStatus();
+    alert(`Successfully ${mode === 'replace' ? 'replaced' : 'merged'} game history! Now have ${gameHistory.length} games.`);
+    
+  } catch (error) {
+    alert(`Error during import: ${error.message}`);
+  }
+}
+
+// Remove import dialog
+function removeImportDialog() {
+  const overlays = document.querySelectorAll(".fixed.inset-0");
+  overlays.forEach(overlay => overlay.remove());
+}
+
+// Show instructions popup
+function showInstructions() {
+  const overlay = document.createElement("div");
+  overlay.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4";
+  
+  overlay.innerHTML = `
+    <div class="bg-white rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold">📖 How This Tracker Works</h3>
+          <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()" 
+                  class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+        </div>
+        <ul class="list-disc list-inside text-sm space-y-2">
+          <li>🎱 <strong>Player Management:</strong> Add players and track their scores with current break display</li>
+          <li>🎯 <strong>Current Player:</strong> Highlighted with green border - only they can pot balls</li>
+          <li>🔴 <strong>Red Phase:</strong> Pot reds (1 pt), then choose any color (re-spotted after potting)</li>
+          <li>🌈 <strong>Final Colors:</strong> After all reds, pot colors in order: Yellow→Green→Brown→Blue→Pink→Black</li>
+          <li>⚠️ <strong>Smart Buttons:</strong> Only valid shots are clickable (invalid ones are grayed out)</li>
+          <li>💥 <strong>Foul System:</strong> Miss/General(4), Yellow/Green/Brown(4), Blue(5), Pink(6), Black(7) - points awarded to opponents</li>
+          <li>🔄 <strong>Turn Control:</strong> "Miss/End Turn" button or pot invalid ball to switch players</li>
+          <li>↩️ <strong>Undo Function:</strong> Reverse last action (pot, foul, or turn end)</li>
+          <li>📊 <strong>Break Tracking:</strong> Shows consecutive scoring points for current player's turn</li>
+          <li>🎮 <strong>Game Management:</strong> "End Game" shows winner popup, "New Game" resets everything</li>
+          <li>📈 <strong>History Tracking:</strong> View all previous games with detailed ball-by-ball history</li>
+          <li>📱 <strong>Data Persistence:</strong> Games auto-save locally and survive browser restarts</li>
+          <li>💾 <strong>Import/Export:</strong> Backup history to files or restore from previous exports</li>
+          <li>🏆 <strong>Winner Detection:</strong> Automatic game end when all balls potted, manual end anytime</li>
+          <li>🎨 <strong>Visual History:</strong> Ball emojis show each player's potting sequence and fouls</li>
+        </ul>
+        <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                class="mt-6 w-full bg-blue-500 hover:bg-blue-600 text-white rounded px-4 py-2">Close</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay);
+}
