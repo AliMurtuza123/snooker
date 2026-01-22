@@ -17,165 +17,46 @@
       <button onclick="addPlayer()" class="mt-2 w-full bg-blue-500 text-white rounded px-3 py-2">Add Player</button>
     </div>
 
+    <div class="my-4 p-4 bg-white rounded shadow">
+      <div class="text-center">
+        <h2 class="text-lg font-semibold mb-2">Game <span id="currentGameNumber">1</span> Status</h2>
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div><strong>Current Player:</strong> <span id="currentPlayer" class="text-green-600">-</span></div>
+          <div><strong>Phase:</strong> <span id="gamePhase" class="text-blue-600">Pot a red</span></div>
+          <div><strong>Reds Left:</strong> <span id="redsRemaining" class="text-red-600">15</span></div>
+          <div><strong>Points Left:</strong> <span id="remainingPoints" class="text-purple-600">147</span></div>
+        </div>
+      </div>
+    </div>
+
     <div id="playersContainer" class="space-y-4"></div>
 
-    <div class="flex gap-2 mt-4">
-      <button onclick="undoLastAction()" class="flex-1 bg-yellow-500 text-white rounded px-3 py-2">Undo</button>
-      <button onclick="resetGame()" class="flex-1 bg-red-500 text-white rounded px-3 py-2">Reset / Next Game</button>
+    <div class="mt-4">
+      <div class="flex gap-2 mb-2">
+        <button onclick="endTurn()" class="flex-1 bg-orange-500 text-white rounded px-3 py-2">Miss/End Turn</button>
+        <button onclick="undoLastAction()" class="flex-1 bg-yellow-500 text-white rounded px-3 py-2">Undo</button>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="showGameHistory()" class="flex-1 bg-purple-500 text-white rounded px-3 py-2">History</button>
+        <button onclick="endGameManually()" class="flex-1 bg-gray-600 text-white rounded px-3 py-2">End Game</button>
+        <button onclick="resetGame()" class="flex-1 bg-red-500 text-white rounded px-3 py-2">New Game</button>
+      </div>
     </div>
 
     <div class="my-6 p-4 bg-white rounded shadow">
-      <h2 class="text-lg font-semibold mb-2">Remaining Points on Table: <span id="remainingPoints">147</span></h2>
-    </div>
-
-    <div class="my-6 p-4 bg-white rounded shadow">
-      <h2 class="text-lg font-semibold mb-2">Common Snooker Rules & Fouls</h2>
+      <h2 class="text-lg font-semibold mb-2">How This Tracker Works</h2>
       <ul class="list-disc list-inside text-sm">
-        <li>Potting a red gives 1 point, then a color of choice.</li>
-        <li>Color points: Yellow (2), Green (3), Brown (4), Blue (5), Pink (6), Black (7).</li>
-        <li>After all reds, colors must be potted in order: Yellow to Black.</li>
-        <li>Foul if cue ball misses target ball: 4–7 points to opponent depending on ball involved.</li>
-        <li>Touching ball, double hit, or jump shot = foul.</li>
-        <li>Failing to hit any ball or playing out of turn = foul.</li>
+        <li>🎱 Current player is highlighted with a green border</li>
+        <li>🔴 Pot reds (1 pt) then any color, which gets re-spotted</li>
+        <li>🎯 After all 15 reds, pot colors in order: Yellow→Green→Brown→Blue→Pink→Black</li>
+        <li>⚠️ Only valid shots are clickable (others are grayed out)</li>
+        <li>💥 Fouls give variable points: Yellow/Green/Brown(4), Blue(5), Pink(6), Black(7)</li>
+        <li>🏆 Game ends when all balls potted or win is mathematically certain</li>
+        <li>📊 Break tracking shows consecutive scoring for current player</li>
       </ul>
     </div>
   </div>
 
-  <script>
-    const pointValues = {
-      red: 1,
-      yellow: 2,
-      green: 3,
-      brown: 4,
-      blue: 5,
-      pink: 6,
-      black: 7
-    };
-
-    const colorMap = {
-      red: 'red',
-      yellow: 'yellow',
-      green: 'green',
-      brown: 'amber',
-      blue: 'blue',
-      pink: 'pink',
-      black: 'gray'
-    };
-
-    let players = [];
-    let remainingPoints = 147;
-    let history = [];
-
-    function addPlayer() {
-      const name = document.getElementById("playerName").value.trim();
-      if (!name) return;
-      const id = Date.now();
-      players.push({ id, name, score: 0 });
-      renderPlayers();
-      document.getElementById("playerName").value = "";
-    }
-
-    function renderPlayers() {
-      const container = document.getElementById("playersContainer");
-      container.innerHTML = "";
-
-      players.forEach(player => {
-        const div = document.createElement("div");
-        div.className = "bg-white p-4 rounded shadow";
-
-        div.innerHTML = `
-          <h3 class="font-semibold text-lg mb-2">${player.name}: <span id="score-${player.id}">${player.score}</span></h3>
-          <div class="grid grid-cols-4 gap-2 text-center text-sm">
-            ${Object.entries(pointValues).map(([color, value]) => {
-              const twColor = colorMap[color] || 'gray';
-              return `<button onclick="addPoints(${player.id}, ${value}, '${color}')" class="bg-${twColor}-500 text-white rounded px-2 py-1">${color.charAt(0).toUpperCase() + color.slice(1)} (+${value})</button>`;
-            }).join('')}
-            <button onclick="addFoul(${player.id})" class="col-span-2 bg-black text-white rounded px-2 py-1">Foul (+4)</button>
-          </div>
-        `;
-
-        container.appendChild(div);
-      });
-    }
-
-    function addPoints(id, points, color) {
-      const player = players.find(p => p.id === id);
-      if (!player) return;
-
-      history.push({
-        type: 'addPoints',
-        id,
-        points,
-        color,
-        previousRemaining: remainingPoints
-      });
-
-      player.score += points;
-      updateUI(id);
-      remainingPoints = Math.max(remainingPoints - points, 0);
-      document.getElementById("remainingPoints").innerText = remainingPoints;
-    }
-
-    function addFoul(id) {
-      const foulPoints = 4;
-      const opponents = players.filter(p => p.id !== id);
-      if (opponents.length === 0) return;
-
-      history.push({
-        type: 'foul',
-        offenderId: id,
-        affected: opponents.map(p => ({ id: p.id, prevScore: p.score }))
-      });
-
-      opponents.forEach(p => {
-        p.score += foulPoints;
-        updateUI(p.id);
-      });
-    }
-
-    function undoLastAction() {
-      const last = history.pop();
-      if (!last) return;
-
-      if (last.type === 'addPoints') {
-        const player = players.find(p => p.id === last.id);
-        if (!player) return;
-        player.score -= last.points;
-        remainingPoints = last.previousRemaining;
-        updateUI(player.id);
-        document.getElementById("remainingPoints").innerText = remainingPoints;
-      } else if (last.type === 'foul') {
-        last.affected.forEach(({ id, prevScore }) => {
-          const player = players.find(p => p.id === id);
-          if (player) {
-            player.score = prevScore;
-            updateUI(id);
-          }
-        });
-      }
-    }
-
-function resetGame() {
-  players.forEach(player => {
-    player.score = 0;
-    updateUI(player.id);
-  });
-  remainingPoints = 147;
-  history = [];
-  document.getElementById("remainingPoints").innerText = remainingPoints;
-}
-
-    function updateUI(id) {
-      document.getElementById(`score-${id}`).innerText = players.find(p => p.id === id).score;
-    }
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(reg => console.log('Service Worker registered:', reg))
-          .catch(err => console.error('Service Worker registration failed:', err));
-      });
-    }
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
