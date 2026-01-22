@@ -1,62 +1,131 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Snooker Points Tracker</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1f2937">
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 p-4">
-  <div class="max-w-md mx-auto">
-    <h1 class="text-2xl font-bold mb-4 text-center">Snooker Points Tracker</h1>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snooker Points Tracker</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#1f2937" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 p-4">
+    <div class="max-w-md mx-auto">
+      <h1 class="text-2xl font-bold mb-4 text-center">
+        Snooker Points Tracker
+      </h1>
 
-    <div class="mb-4">
-      <input id="playerName" type="text" placeholder="Add player name" class="border rounded px-3 py-2 w-full" />
-      <button onclick="addPlayer()" class="mt-2 w-full bg-blue-500 text-white rounded px-3 py-2">Add Player</button>
-    </div>
+      <div class="mb-4">
+        <input
+          id="playerName"
+          type="text"
+          placeholder="Add player name"
+          class="border rounded px-3 py-2 w-full"
+        />
+        <button
+          onclick="addPlayer()"
+          class="mt-2 w-full bg-blue-500 text-white rounded px-3 py-2"
+        >
+          Add Player
+        </button>
+      </div>
 
-    <div class="my-4 p-4 bg-white rounded shadow">
-      <div class="text-center">
-        <h2 class="text-lg font-semibold mb-2">Game <span id="currentGameNumber">1</span> Status</h2>
-        <div class="grid grid-cols-2 gap-4 text-sm">
-          <div><strong>Current Player:</strong> <span id="currentPlayer" class="text-green-600">-</span></div>
-          <div><strong>Phase:</strong> <span id="gamePhase" class="text-blue-600">Pot a red</span></div>
-          <div><strong>Reds Left:</strong> <span id="redsRemaining" class="text-red-600">15</span></div>
-          <div><strong>Points Left:</strong> <span id="remainingPoints" class="text-purple-600">147</span></div>
+      <div class="my-4 p-4 bg-white rounded shadow">
+        <div class="text-center">
+          <h2 class="text-lg font-semibold mb-2">
+            Game <span id="currentGameNumber">1</span> Status
+          </h2>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <strong>Current Player:</strong>
+              <span id="currentPlayer" class="text-green-600">-</span>
+            </div>
+            <div>
+              <strong>Phase:</strong>
+              <span id="gamePhase" class="text-blue-600">Pot a red</span>
+            </div>
+            <div>
+              <strong>Reds Left:</strong>
+              <span id="redsRemaining" class="text-red-600">15</span>
+            </div>
+            <div>
+              <strong>Points Left:</strong>
+              <span id="remainingPoints" class="text-purple-600">147</span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div id="playersContainer" class="space-y-4"></div>
+      <div id="playersContainer" class="space-y-4"></div>
 
-    <div class="mt-4">
-      <div class="flex gap-2 mb-2">
-        <button onclick="endTurn()" class="flex-1 bg-orange-500 text-white rounded px-3 py-2">Miss/End Turn</button>
-        <button onclick="undoLastAction()" class="flex-1 bg-yellow-500 text-white rounded px-3 py-2">Undo</button>
+      <div class="mt-4">
+        <div class="flex gap-2 mb-2">
+          <button
+            onclick="endTurn()"
+            class="flex-1 bg-orange-500 text-white rounded px-3 py-2"
+          >
+            Miss/End Turn
+          </button>
+          <button
+            onclick="undoLastAction()"
+            class="flex-1 bg-yellow-500 text-white rounded px-3 py-2"
+          >
+            Undo
+          </button>
+        </div>
+        <div class="flex gap-2 mb-2">
+          <button
+            onclick="showGameHistory()"
+            class="flex-1 bg-purple-500 text-white rounded px-3 py-2"
+          >
+            History
+          </button>
+          <button
+            onclick="endGameManually()"
+            class="flex-1 bg-gray-600 text-white rounded px-3 py-2"
+          >
+            End Game
+          </button>
+          <button
+            onclick="resetGame()"
+            class="flex-1 bg-red-500 text-white rounded px-3 py-2"
+          >
+            New Game
+          </button>
+        </div>
+      </div>
+
+      <div class="my-6 p-4 bg-white rounded shadow">
+        <h2 class="text-lg font-semibold mb-2">How This Tracker Works</h2>
+        <ul class="list-disc list-inside text-sm">
+          <li>🎱 Current player is highlighted with a green border</li>
+          <li>🔴 Pot reds (1 pt) then any color, which gets re-spotted</li>
+          <li>
+            🎯 After all 15 reds, pot colors in order:
+            Yellow→Green→Brown→Blue→Pink→Black
+          </li>
+          <li>⚠️ Only valid shots are clickable (others are grayed out)</li>
+          <li>
+            💥 Fouls give variable points: Yellow/Green/Brown(4), Blue(5),
+            Pink(6), Black(7)
+          </li>
+          <li>
+            🏆 Game ends when all balls potted or win is mathematically certain
+          </li>
+          <li>
+            📊 Break tracking shows consecutive scoring for current player
+          </li>
+        </ul>
       </div>
       <div class="flex gap-2">
-        <button onclick="showGameHistory()" class="flex-1 bg-purple-500 text-white rounded px-3 py-2">History</button>
-        <button onclick="endGameManually()" class="flex-1 bg-gray-600 text-white rounded px-3 py-2">End Game</button>
-        <button onclick="resetGame()" class="flex-1 bg-red-500 text-white rounded px-3 py-2">New Game</button>
+        <button
+          onclick="clearSavedData()"
+          class="w-full bg-red-700 hover:bg-red-800 text-white rounded px-3 py-2 text-sm"
+        >
+          Clear All History
+        </button>
       </div>
     </div>
 
-    <div class="my-6 p-4 bg-white rounded shadow">
-      <h2 class="text-lg font-semibold mb-2">How This Tracker Works</h2>
-      <ul class="list-disc list-inside text-sm">
-        <li>🎱 Current player is highlighted with a green border</li>
-        <li>🔴 Pot reds (1 pt) then any color, which gets re-spotted</li>
-        <li>🎯 After all 15 reds, pot colors in order: Yellow→Green→Brown→Blue→Pink→Black</li>
-        <li>⚠️ Only valid shots are clickable (others are grayed out)</li>
-        <li>💥 Fouls give variable points: Yellow/Green/Brown(4), Blue(5), Pink(6), Black(7)</li>
-        <li>🏆 Game ends when all balls potted or win is mathematically certain</li>
-        <li>📊 Break tracking shows consecutive scoring for current player</li>
-      </ul>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>
